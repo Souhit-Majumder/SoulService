@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:complexType name="dietary_infos">
+        <xs:sequence>
+            <xs:element name="dietary_info" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="allergens">
+        <xs:sequence>
+            <xs:element name="allergen" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:element name="create_listing">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="food_name" type="xs:string"/>
+                <xs:element name="description" type="xs:string"/>
+                <xs:element name="quantity" type="xs:positiveInteger"/>
+                <xs:element name="unit" type="xs:string"/>
+                <xs:element name="prepared_at" type="xs:dateTime"/>
+                <xs:element name="pickup_deadline" type="xs:dateTime"/>
+                <xs:element name="pickup_location" type="xs:string"/>
+                <xs:element name="dietary_infos" type="dietary_infos" minOccurs="0"/>
+                <xs:element name="allergens" type="allergens" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

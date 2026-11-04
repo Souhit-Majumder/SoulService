@@ -27,11 +27,12 @@ def create_listing(conn: sqlite3.Connection, caterer_id: int, data: dict) -> int
     cursor = conn.execute(
         """INSERT INTO food_listings
            (caterer_id, food_name, food_description, pickup_location,
-            quantity, unit, prepared_date, pickup_deadline)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            quantity, unit, prepared_date, pickup_deadline, demo_key)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             caterer_id, data["food_name"], data["description"], data["pickup_location"],
             data["quantity"], data["unit"], data["prepared_at"], data["pickup_deadline"],
+            data.get("demo_key"),
         ),
     )
     food_id = cursor.lastrowid

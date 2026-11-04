@@ -16,7 +16,10 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000. On first start the database is created and filled with demo data.
+Open http://127.0.0.1:8000. On startup the database is created if needed, and
+demo accounts and available sample food listings are seeded automatically.
+Expired, unrequested samples get fresh pickup times on the next startup;
+listings with requests keep their history, and existing user data is preserved.
 
 New users can join at `/register`: choose Caterer or NGO, create an account, and
 follow the role-specific getting-started page. Registration signs the new user in.
@@ -24,7 +27,7 @@ The caterer guide leads to posting food and managing pickup requests; the NGO
 guide leads to browsing food and tracking requests. Accounts are self-registered;
 the app does not verify email addresses or organization identity.
 
-To go back to a clean demo (pickup deadlines are relative to "now", so do this before presenting):
+To erase all local data and start a completely clean demo:
 
 ```bash
 python -m app.database.seed --reset
@@ -124,6 +127,7 @@ location. No Google Maps API key or geocoding service is required. Contact
 numbers are not displayed on the public food browse page.
 
 Existing databases are upgraded automatically on application startup to add
-the optional contact field without deleting listings or requests. Run
+the optional contact field and demo listing marker without deleting listings
+or requests. Run
 `python -m pytest -q` to verify the original and new tests. For real use,
 confirm the pickup address and phone number with the caterer before travel.

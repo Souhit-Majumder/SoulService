@@ -16,6 +16,9 @@ def initialize_database() -> None:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(users)")}
         if "contact_phone" not in columns:
             connection.execute("ALTER TABLE users ADD COLUMN contact_phone TEXT NOT NULL DEFAULT ''")
+        listing_columns = {row[1] for row in connection.execute("PRAGMA table_info(food_listings)")}
+        if "demo_key" not in listing_columns:
+            connection.execute("ALTER TABLE food_listings ADD COLUMN demo_key TEXT")
         connection.commit()
     finally:
         connection.close()

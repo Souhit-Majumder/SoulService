@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS food_listings (
     pickup_deadline TEXT NOT NULL CHECK (pickup_deadline > prepared_date),
     status TEXT NOT NULL DEFAULT 'available' 
     CHECK (status IN ('available', 'reserved', 'picked_up', 'cancelled')),    
+    demo_key TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 

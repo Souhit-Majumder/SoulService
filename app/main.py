@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
     initialize_database()
     conn = get_connection()
     try:
-        seed_demo_data(conn)  # adds demo accounts/listings only if missing
+        seed_demo_data(conn)
     finally:
         conn.close()
     yield

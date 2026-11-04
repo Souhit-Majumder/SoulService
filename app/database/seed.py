@@ -1,8 +1,4 @@
-"""Demo data: four accounts and a few food listings, so the app is never empty.
-
-Run `python -m app.database.seed --reset` to wipe the database and start fresh
-(handy right before a demo, because pickup deadlines are relative to "now").
-"""
+"""Keep four demo accounts and usable sample listings available at startup."""
 import sqlite3
 import sys
 from datetime import datetime, timedelta
@@ -32,45 +28,79 @@ def _listing(hours_ago: float, hours_left: float, **fields) -> dict:
 
 
 def seed_demo_data(conn: sqlite3.Connection) -> None:
-    password_hash = hash_password(DEMO_PASSWORD)
+    password_hash = None
     for name, email, role in DEMO_USERS:
         if not users.get_by_email(conn, email):
+            if password_hash is None:
+                password_hash = hash_password(DEMO_PASSWORD)
             users.create_user(conn, name, email, password_hash, role)
-    conn.commit()
-
-    if listings.count_listings(conn) > 0:
-        return
 
     green = users.get_by_email(conn, "caterer@soulservice.test")["user_id"]
     udupi = users.get_by_email(conn, "caterer2@soulservice.test")["user_id"]
     fmt = "%Y-%m-%d %H:%M:%S"
     samples = [
-        (green, _listing(
+        ("vegetable-pulao", green, _listing(
             1, 5, food_name="Vegetable pulao",
             description="Fragrant pulao with carrots, peas and beans, left over from a corporate lunch.",
             pickup_location="MIT Campus, Manipal", quantity=40, unit="portions",
             dietary=["vegetarian"], allergens=["milk"])),
-        (green, _listing(
+        ("chapati-and-dal", green, _listing(
             2, 4, food_name="Chapati and dal",
             description="Soft chapatis with yellow dal tadka, packed in boxes.",
             pickup_location="Tiger Circle, Manipal", quantity=25, unit="packets",
             dietary=["vegetarian", "jain"], allergens=["gluten"])),
-        (udupi, _listing(
+        ("idli-and-sambar", udupi, _listing(
             1, 6, food_name="Idli and sambar",
             description="Steamed idlis with coconut chutney and sambar from a wedding breakfast.",
             pickup_location="Car Street, Udupi", quantity=60, unit="portions",
             dietary=["vegan", "vegetarian"], allergens=[])),
-        (udupi, _listing(
+        ("fresh-fruit-cups", udupi, _listing(
             0.5, 3, food_name="Fresh fruit cups",
             description="Mixed seasonal fruit in sealed cups, kept chilled.",
             pickup_location="Udupi City Bus Stand", quantity=30, unit="pieces",
             dietary=["vegan", "vegetarian", "gluten-free"], allergens=[])),
     ]
-    for caterer_id, data in samples:
+    now = datetime.now().replace(microsecond=0).strftime(fmt)
+    for key, caterer_id, data in samples:
         data = {**data,
                 "prepared_at": data["prepared_at"].strftime(fmt),
-                "pickup_deadline": data["pickup_deadline"].strftime(fmt)}
-        listings.create_listing(conn, caterer_id, data)
+                "pickup_deadline": data["pickup_deadline"].strftime(fmt),
+                "demo_key": key}
+
+        # Recognize samples created before demo_key was introduced. Matching all
+        # identifying fields avoids tagging unrelated food from a demo account.
+        conn.execute(
+            """UPDATE food_listings SET demo_key = ?
+               WHERE demo_key IS NULL AND caterer_id = ? AND food_name = ?
+                 AND food_description = ? AND pickup_location = ?
+                 AND quantity = ? AND unit = ?""",
+            (key, caterer_id, data["food_name"], data["description"],
+             data["pickup_location"], data["quantity"], data["unit"]),
+        )
+        active = conn.execute(
+            """SELECT 1 FROM food_listings
+               WHERE demo_key = ? AND status = 'available' AND pickup_deadline > ?
+               LIMIT 1""", (key, now),
+        ).fetchone()
+        if active:
+            continue
+
+        # Reuse an expired, unrequested sample so routine restarts do not grow
+        # the database. A sample with requests keeps its original history.
+        reusable = conn.execute(
+            """SELECT f.food_id FROM food_listings f
+               WHERE f.demo_key = ? AND f.status = 'available'
+                 AND NOT EXISTS (SELECT 1 FROM listing_requests r WHERE r.food_id = f.food_id)
+               ORDER BY f.food_id DESC LIMIT 1""", (key,),
+        ).fetchone()
+        if reusable:
+            conn.execute(
+                """UPDATE food_listings SET prepared_date = ?, pickup_deadline = ?
+                   WHERE food_id = ?""",
+                (data["prepared_at"], data["pickup_deadline"], reusable["food_id"]),
+            )
+        else:
+            listings.create_listing(conn, caterer_id, data)
     conn.commit()
 
 

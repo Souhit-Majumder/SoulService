@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Create an account{% endblock %}
+{% block content %}
+<div class="onboarding-intro">
+    <p class="eyebrow">Join SoulService</p>
+    <h1>How will you take part?</h1>
+    <p class="lead">Choose the account that fits your organization. You can get started in a few minutes.</p>
+</div>
+
+<ol class="progress-steps" aria-label="Registration progress">
+    <li aria-current="step">1. Choose your role</li>
+    <li>2. Create your account</li>
+    <li>3. Get started</li>
+</ol>
+
+<div class="role-choice-grid">
+    <article class="card role-choice" aria-labelledby="caterer-choice">
+        <h2 id="caterer-choice">I share surplus food</h2>
+        <p>For caterers and food businesses with food ready for local NGOs to collect.</p>
+        <a class="btn btn-primary" href="/register/caterer">Continue as a caterer</a>
+    </article>
+    <article class="card role-choice" aria-labelledby="ngo-choice">
+        <h2 id="ngo-choice">I collect food for an NGO</h2>
+        <p>For NGOs that can request available food and coordinate a pickup.</p>
+        <a class="btn btn-primary" href="/register/ngo">Continue as an NGO</a>
+    </article>
+</div>
+
+<p class="account-switch">Already have an account? <a href="/login">Log in</a>.</p>
+{% endblock %}

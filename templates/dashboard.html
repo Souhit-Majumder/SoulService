@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% macro action_form(url, label, style, confirm='') %}
+<form method="post" action="{{ url }}" {% if confirm %}data-confirm="{{ confirm }}"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="/dashboard">
+    <button class="btn {{ style }} btn-small" type="submit">{{ label }}</button>
+</form>
+{% endmacro %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Hello, {{ user.name }}</h1>
+        <p class="muted">{{ 'Here is what is happening with your surplus food.' if user.role == 'caterer' else 'Here is where your food requests stand.' }}</p>
+    </div>
+    {% if user.role == 'caterer' %}
+    <a class="btn btn-primary" href="/food/new">Post food</a>
+    {% else %}
+    <a class="btn btn-primary" href="/food">Browse food</a>
+    {% endif %}
+</div>
+
+{% if user.role == 'caterer' %}
+<!-- ============ CATERER ============ -->
+<section class="card contact-settings" aria-labelledby="contact-settings-title">
+    <h2 id="contact-settings-title">Pickup contact</h2>
+    <p class="muted small">Only NGOs whose requests you accept can see this number. Leave blank to hide it.</p>
+    <form method="post" action="/profile/contact" class="contact-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+            <label for="contact_phone">Contact phone (optional)</label>
+            <input id="contact_phone" name="phone" type="tel" autocomplete="tel" maxlength="20"
+                   value="{{ user.contact_phone or '' }}" placeholder="e.g. +91 98765 43210">
+        </div>
+        <button class="btn btn-secondary" type="submit">Save contact</button>
+    </form>
+</section>
+<section class="stats stats-3" aria-label="Summary">
+    <div class="stat"><span class="stat-number">{{ stats.active }}</span><span class="stat-label">active listings</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.pending }}</span><span class="stat-label">requests to review</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.collected }}</span><span class="stat-label">collected</span></div>
+</section>
+
+<section aria-labelledby="pending-heading">
+    <h2 id="pending-heading">Requests waiting for you</h2>
+    {% if pending %}
+    <ul class="row-list">
+        {% for r in pending %}
+        <li class="card row-card">
+            <div>
+                <strong>{{ r.recipient_name }}</strong> would like <strong>{{ r.food_name }}</strong>
+                <div class="muted small">{{ r.quantity }} {{ r.unit }} · pickup by {{ r.pickup_deadline | pretty_dt }}</div>
+            </div>
+            <div class="row-actions">
+                {{ action_form('/requests/%d/accept' % r.request_id, 'Accept', 'btn-primary') }}
+                {{ action_form('/requests/%d/reject' % r.request_id, 'Decline', 'btn-ghost', 'Decline this request from ' ~ r.recipient_name ~ '?') }}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted empty-line">No requests to review. They'll show up here when an NGO asks for your food.</p>
+    {% endif %}
+</section>
+
+<section aria-labelledby="reserved-heading">
+    <h2 id="reserved-heading">Reserved: awaiting collection</h2>
+    {% if accepted %}
+    <ul class="row-list">
+        {% for r in accepted %}
+        <li class="card row-card">
+            <div>
+                <strong>{{ r.food_name }}</strong> is reserved for <strong>{{ r.recipient_name }}</strong>
+                <div class="muted small">Collect from {{ r.pickup_location }} · by {{ r.pickup_deadline | pretty_dt }}
+                    ({{ r.pickup_deadline | time_left }})</div>
+            </div>
+            <div class="row-actions">
+                {{ action_form('/requests/%d/collect' % r.request_id, 'Confirm collection', 'btn-primary', 'Confirm that ' ~ r.recipient_name ~ ' has collected ' ~ r.food_name ~ '?') }}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted empty-line">Nothing reserved right now.</p>
+    {% endif %}
+</section>
+
+<section aria-labelledby="listings-heading">
+    <h2 id="listings-heading">Your listings</h2>
+    {% if listings %}
+    <ul class="row-list">
+        {% for l in listings %}
+        <li class="card row-card">
+            <div>
+                <strong>{{ l.food_name }}</strong>
+                <span class="pill pill-{{ l.status }}">{{ l.status | listing_status }}</span>
+                <div class="muted small">{{ l.quantity }} {{ l.unit }} · {{ l.pickup_location }} ·
+                    {% if l.status == 'available' %}{{ l.pickup_deadline | time_left }}{% else %}pickup by {{ l.pickup_deadline | pretty_dt }}{% endif %}
+                    {% if l.status == 'available' and l.pending_count %} · {{ l.pending_count }} pending request{{ '' if l.pending_count == 1 else 's' }}{% endif %}</div>
+            </div>
+            {% if l.status == 'available' %}
+            <div class="row-actions">
+                {{ action_form('/food/%d/withdraw' % l.food_id, 'Withdraw', 'btn-ghost', 'Withdraw ' ~ l.food_name ~ '? Any pending requests will be declined.') }}
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="card empty">
+        <h3>You haven't posted any food yet</h3>
+        <p class="muted">Got surplus? It takes about a minute.</p>
+        <a class="btn btn-primary" href="/food/new">Post your first listing</a>
+        <a class="btn btn-secondary" href="/onboarding">Getting started guide</a>
+    </div>
+    {% endif %}
+</section>
+
+{% else %}
+<!-- ============ NGO / RECIPIENT ============ -->
+<section class="stats stats-3" aria-label="Summary">
+    <div class="stat"><span class="stat-number">{{ stats.waiting }}</span><span class="stat-label">awaiting response</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.accepted }}</span><span class="stat-label">ready to collect</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.collected }}</span><span class="stat-label">collected</span></div>
+</section>
+
+<section aria-labelledby="requests-heading">
+    <h2 id="requests-heading">Your requests</h2>
+    {% if my_requests %}
+    <ul class="row-list">
+        {% for r in my_requests %}
+        <li class="card row-card">
+            <div>
+                <strong>{{ r.food_name }}</strong>
+                <span class="pill pill-{{ r.status }}">{{ r.status | request_status }}</span>
+                <div class="muted small">from {{ r.caterer_name }} · {{ r.quantity }} {{ r.unit }}</div>
+                {% if r.status == 'accepted' %}
+                <div class="callout">✓ Reserved for you. Collect from <strong>{{ r.pickup_location }}</strong> by
+                    <strong>{{ r.pickup_deadline | pretty_dt }}</strong> ({{ r.pickup_deadline | time_left }}).</div>
+                <div class="pickup-actions">
+                    <a class="btn btn-secondary btn-small" target="_blank" rel="noopener noreferrer"
+                       href="https://www.google.com/maps/search/?api=1&amp;query={{ r.pickup_location | urlencode }}">Get directions <span class="visually-hidden">(opens in a new tab)</span></a>
+                    {% if r.caterer_phone %}<a class="btn btn-secondary btn-small" href="tel:{{ r.caterer_phone | replace(' ', '') | replace('-', '') | replace('(', '') | replace(')', '') }}">Call caterer: {{ r.caterer_phone }}</a>{% endif %}
+                </div>
+                {% elif r.status == 'pending' %}
+                <div class="muted small">Pickup deadline: {{ r.pickup_deadline | pretty_dt }}</div>
+                {% endif %}
+            </div>
+            {% if r.status in ('pending', 'accepted') %}
+            <div class="row-actions">
+                {{ action_form('/requests/%d/cancel' % r.request_id, 'Cancel request', 'btn-ghost', 'Cancel your request for ' ~ r.food_name ~ '?') }}
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="card empty">
+        <h3>No requests yet</h3>
+        <p class="muted">Browse what's available and request what your NGO can use.</p>
+        <a class="btn btn-primary" href="/food">Browse available food</a>
+        <a class="btn btn-secondary" href="/onboarding">Getting started guide</a>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

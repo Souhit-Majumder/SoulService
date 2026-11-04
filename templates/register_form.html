@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Register as {{ 'an' if kind == 'ngo' else 'a' }} {{ copy.role }}{% endblock %}
+{% block content %}
+<div class="onboarding-intro">
+    <p class="eyebrow">Join SoulService</p>
+    <h1>Create your {{ copy.role }} account</h1>
+    <p class="muted">{{ copy.intro }}</p>
+</div>
+
+<ol class="progress-steps" aria-label="Registration progress">
+    <li><a href="/register">1. Choose your role</a></li>
+    <li aria-current="step">2. Create your account</li>
+    <li>3. Get started</li>
+</ol>
+
+<form class="card form-card register-form" method="post" action="/register/{{ kind }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p class="muted">All fields are required.</p>
+    {% if error %}<p class="form-error" id="register-error" role="alert">{{ error }}</p>{% endif %}
+
+    <div class="field">
+        <label for="name">{{ copy.name_label }}</label>
+        <input id="name" name="name" type="text" autocomplete="organization" minlength="2" maxlength="100"
+               required value="{{ organization_name }}" {% if error %}aria-describedby="register-error"{% endif %}>
+    </div>
+    <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required
+               value="{{ email }}" {% if error %}aria-describedby="register-error"{% endif %}>
+    </div>
+    <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="new-password"
+               minlength="12" maxlength="128" required aria-describedby="password-hint">
+        <p class="hint" id="password-hint">Use at least 12 characters.</p>
+    </div>
+    <div class="field">
+        <label for="confirm_password">Confirm password</label>
+        <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password"
+               minlength="12" maxlength="128" required>
+    </div>
+    <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Create account</button>
+        <a class="btn btn-ghost" href="/register">Back to roles</a>
+    </div>
+</form>
+{% endblock %}

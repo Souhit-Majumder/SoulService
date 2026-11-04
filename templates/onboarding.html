@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Getting started{% endblock %}
+{% block content %}
+<div class="onboarding-intro">
+    <p class="eyebrow">Welcome, {{ user.name }}</p>
+    {% if user.role == 'caterer' %}
+    <h1>You're ready to share surplus food.</h1>
+    <p class="lead">Here is how to get your first listing from your kitchen to an NGO.</p>
+    {% else %}
+    <h1>You're ready to find food for your community.</h1>
+    <p class="lead">Here is how to find a listing and coordinate collection.</p>
+    {% endif %}
+</div>
+
+<ol class="progress-steps" aria-label="Registration progress">
+    <li>1. Choose your role</li>
+    <li>2. Create your account</li>
+    <li aria-current="step">3. Get started</li>
+</ol>
+
+{% if user.role == 'caterer' %}
+<ol class="steps onboarding-steps">
+    <li class="card"><span class="step-no">1</span>
+        <h2>Add a pickup contact (optional)</h2>
+        <p>Save a phone number on your dashboard. Only an NGO whose request you accept can see it.</p>
+    </li>
+    <li class="card"><span class="step-no">2</span>
+        <h2>Post available food</h2>
+        <p>Describe the food, quantity, allergens, pickup location, and collection deadline.</p>
+    </li>
+    <li class="card"><span class="step-no">3</span>
+        <h2>Coordinate collection</h2>
+        <p>Review requests on your dashboard, accept one NGO, then confirm collection.</p>
+    </li>
+</ol>
+<div class="hero-actions">
+    <a class="btn btn-primary" href="/food/new">Post your first listing</a>
+    <a class="btn btn-secondary" href="/dashboard">Open dashboard</a>
+</div>
+{% else %}
+<ol class="steps onboarding-steps">
+    <li class="card"><span class="step-no">1</span>
+        <h2>Browse available food</h2>
+        <p>Search the listings and check quantities, allergens, and pickup deadlines.</p>
+    </li>
+    <li class="card"><span class="step-no">2</span>
+        <h2>Request a listing</h2>
+        <p>Choose food your NGO can use and send a request to the caterer.</p>
+    </li>
+    <li class="card"><span class="step-no">3</span>
+        <h2>Track and collect</h2>
+        <p>Check your dashboard for acceptance and pickup details, then collect the food.</p>
+    </li>
+</ol>
+<div class="hero-actions">
+    <a class="btn btn-primary" href="/food">Browse available food</a>
+    <a class="btn btn-secondary" href="/dashboard">Open dashboard</a>
+</div>
+{% endif %}
+{% endblock %}

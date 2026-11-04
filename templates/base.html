@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SoulService{% endblock %} · SoulService</title>
+    <meta name="description" content="SoulService connects caterers with surplus food to NGOs that can feed people.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌿%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/app.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="container header-row">
+            <a class="brand" href="/" aria-label="SoulService home">
+                <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                    <circle cx="16" cy="16" r="16" fill="currentColor" />
+                    <path d="M9 21c0-7 5-11 14-12-1 8-5 13-12 13l-2 3" fill="none" stroke="#fbf6ea" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>SoulService</span>
+            </a>
+
+            <nav class="main-nav" aria-label="Main">
+                <a href="/food" {% if current_path=='/food' %}aria-current="page" {% endif %}>Browse food</a>
+                {% if user %}
+                <a href="/dashboard" {% if current_path=='/dashboard' %}aria-current="page" {% endif %}>Dashboard</a>
+                {% if user.role == 'caterer' %}
+                <a href="/food/new" {% if current_path=='/food/new' %}aria-current="page" {% endif %}>Post food</a>
+                {% endif %}
+                {% endif %}
+            </nav>
+
+            <div class="header-user">
+                {% if user %}
+                <span class="user-chip"><span class="user-name">{{ user.name }}</span>
+                    <span class="role-tag">{{ user.role | role_label }}</span></span>
+                <form method="post" action="/logout">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="btn btn-ghost btn-small" type="submit">Log out</button>
+                </form>
+                {% else %}
+                <a class="btn btn-secondary btn-small" href="/register">Join</a>
+                <a class="btn btn-primary btn-small" href="/login">Log in</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main id="main" class="container" tabindex="-1">
+        {% if flashes %}
+        <div class="flashes" role="status" aria-live="polite">
+            {% for kind, message in flashes %}
+            <p class="flash flash-{{ kind }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p><strong>SoulService</strong> · Surplus food, shared instead of wasted.</p>
+            <p class="muted">Connecting surplus food with communities in need.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

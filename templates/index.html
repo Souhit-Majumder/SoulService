@@ -1,18 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="hero">
+    <p class="eyebrow">Surplus food → people who need it</p>
+    <h1>Good food deserves a second plate.</h1>
+    <p class="lead">Caterers often end the day with perfectly good food and nowhere to send it. SoulService lets them
+        post it in a minute, so NGOs nearby can claim it before it goes to waste.</p>
+    <div class="hero-actions">
+        <a class="btn btn-primary" href="/food">See available food</a>
+        {% if user %}
+        <a class="btn btn-secondary" href="/dashboard">Go to my dashboard</a>
+        {% else %}
+        <a class="btn btn-secondary" href="/register">Join SoulService</a>
+        {% endif %}
+    </div>
+</section>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoulService - Home</title>
+<section class="stats" aria-label="SoulService at a glance">
+    <div class="stat"><span class="stat-number">{{ stats.available_portions }}</span><span class="stat-label">portions
+            available now</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.portions_shared }}</span><span class="stat-label">portions
+            already shared</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.caterers }}</span><span class="stat-label">caterers
+            joined</span></div>
+    <div class="stat"><span class="stat-number">{{ stats.recipients }}</span><span class="stat-label">NGOs
+            joined</span></div>
+</section>
 
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script src="/static/js/app.js" defer></script>
-</head>
-
-<body>
-    <h1>SoulService - Home</h1>
-    <h2>Welcome to the SoulService website.</h2>
-</body>
-
-</html>
+<section aria-labelledby="how-heading">
+    <h2 id="how-heading">How it works</h2>
+    <ol class="steps">
+        <li class="card"><span class="step-no">1</span>
+            <h3>Caterer posts food</h3>
+            <p>Add what's left, how much, where to collect it and the pickup deadline.</p>
+        </li>
+        <li class="card"><span class="step-no">2</span>
+            <h3>NGO requests it</h3>
+            <p>NGOs browse what's available and request the food they can use.</p>
+        </li>
+        <li class="card"><span class="step-no">3</span>
+            <h3>Caterer accepts</h3>
+            <p>The caterer chooses one NGO and the food is reserved for them.</p>
+        </li>
+        <li class="card"><span class="step-no">4</span>
+            <h3>Food is collected</h3>
+            <p>Once it's handed over, the caterer confirms collection.</p>
+        </li>
+    </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Available food{% endblock %}
+
+{% macro tags(item) %}
+{% if item.dietary or item.allergens %}
+<ul class="tag-list" aria-label="Dietary information and allergens">
+    {% for d in item.dietary %}<li class="tag tag-diet">{{ d }}</li>{% endfor %}
+    {% for a in item.allergens %}<li class="tag tag-allergen"><span class="visually-hidden">Contains </span>{{ a }}</li>{% endfor %}
+</ul>
+{% else %}
+<p class="muted small">No allergen information supplied. Please check with the caterer.</p>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Available food</h1>
+        <p class="muted">Soonest-expiring food is shown first.</p>
+    </div>
+    {% if user and user.role == 'caterer' %}<a class="btn btn-primary" href="/food/new">Post food</a>{% endif %}
+</div>
+
+<form class="filter-bar" method="get" action="/food" role="search">
+    <div class="field">
+        <label for="q">Search</label>
+        <input id="q" name="q" type="search" value="{{ q }}" placeholder="Food or place, e.g. Manipal">
+    </div>
+    <div class="field">
+        <label for="diet">Dietary</label>
+        <select id="diet" name="diet">
+            <option value="">Any</option>
+            {% for option in dietary_options %}
+            <option value="{{ option }}" {% if option == diet %}selected{% endif %}>{{ option | capitalize }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button class="btn btn-secondary" type="submit">Apply</button>
+    {% if q or diet %}<a class="btn btn-ghost" href="/food">Clear</a>{% endif %}
+</form>
+
+{% if items %}
+<p class="muted" aria-live="polite">{{ items | length }} listing{{ '' if items | length == 1 else 's' }} found</p>
+<div class="grid">
+    {% for item in items %}
+    <article class="card food-card" aria-labelledby="food-{{ item.food_id }}">
+        <div class="food-card-top">
+            <span class="pill pill-{{ 'urgent' if item.pickup_deadline | urgent else 'available' }}">{{ item.pickup_deadline | time_left }}</span>
+            <span class="muted small">by {{ item.caterer_name }}</span>
+        </div>
+        <h2 id="food-{{ item.food_id }}">{{ item.food_name }}</h2>
+        <p>{{ item.food_description }}</p>
+        {{ tags(item) }}
+        <dl class="facts">
+            <div><dt>Quantity</dt><dd>{{ item.quantity }} {{ item.unit }}</dd></div>
+            <div><dt>Collect from</dt><dd>{{ item.pickup_location }}</dd></div>
+            <div><dt>Pickup by</dt><dd>{{ item.pickup_deadline | pretty_dt }}</dd></div>
+        </dl>
+
+        <div class="card-actions">
+            {% if not user %}
+            <a class="btn btn-secondary" href="/login?next=/food">Log in to request</a>
+            {% elif user.role == 'recipient' %}
+            {% if item.food_id in requested %}
+            <span class="pill pill-pending">Requested ✓</span>
+            <span class="muted small">Track it on your dashboard</span>
+            {% else %}
+            <form method="post" action="/food/{{ item.food_id }}/request">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="next" value="/food">
+                <button class="btn btn-primary" type="submit">Request this food</button>
+            </form>
+            {% endif %}
+            {% elif item.caterer_id == user.user_id %}
+            <span class="muted small">Your listing · {{ item.pending_count }} pending request{{ '' if item.pending_count == 1 else 's' }}</span>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card empty">
+    <h2>Nothing available right now</h2>
+    <p class="muted">{% if q or diet %}No listings match your search. Try clearing the filters.{% else %}Check back soon: caterers post new food through the day.{% endif %}</p>
+    {% if q or diet %}<a class="btn btn-secondary" href="/food">Clear filters</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

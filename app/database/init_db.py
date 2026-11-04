@@ -12,6 +12,10 @@ def initialize_database() -> None:
     try:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.executescript(schema)
+        # Upgrade existing local databases without erasing food or requests.
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(users)")}
+        if "contact_phone" not in columns:
+            connection.execute("ALTER TABLE users ADD COLUMN contact_phone TEXT NOT NULL DEFAULT ''")
         connection.commit()
     finally:
         connection.close()

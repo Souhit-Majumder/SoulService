@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    contact_phone TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL CHECK (role IN ('recipient', 'caterer', 'admin')),
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -59,7 +60,8 @@ WHERE status = 'accepted';
 
 
 
-CREATE TRIGGER IF NOT EXISTS tr_only_recipents_can_request
+DROP TRIGGER IF EXISTS tr_only_recipents_can_request;
+CREATE TRIGGER tr_only_recipents_can_request
 BEFORE INSERT ON listing_requests
 FOR EACH ROW
 BEGIN
@@ -68,7 +70,8 @@ BEGIN
     WHERE user_id = NEW.recipient_id AND role != 'recipient';
 END;
 
-CREATE TRIGGER IF NOT EXISTS tr_user_cannot_request_own_listing
+DROP TRIGGER IF EXISTS tr_user_cannot_request_own_listing;
+CREATE TRIGGER tr_user_cannot_request_own_listing
 BEFORE INSERT ON listing_requests
 FOR EACH ROW
 BEGIN
@@ -78,7 +81,8 @@ BEGIN
         AND user_id = (SELECT caterer_id FROM food_listings WHERE food_id = NEW.food_id);
 END;
 
-CREATE TRIGGER IF NOT EXISTS tr_update_food_status_on_request_accept
+DROP TRIGGER IF EXISTS tr_update_food_status_on_request_accept;
+CREATE TRIGGER tr_update_food_status_on_request_accept
 BEFORE UPDATE OF status ON listing_requests
 FOR EACH ROW
 WHEN NEW.status = 'accepted'
@@ -90,12 +94,13 @@ BEGIN
         WHERE food_id = NEW.food_id
           AND (
               status != 'available'
-              OR pickup_deadline <= datetime('now')
+              OR pickup_deadline <= datetime('now', 'localtime')
           )
     );
 END;
     
-CREATE TRIGGER IF NOT EXISTS tr_update_food_status_on_reservation
+DROP TRIGGER IF EXISTS tr_update_food_status_on_reservation;
+CREATE TRIGGER tr_update_food_status_on_reservation
 AFTER UPDATE OF status ON listing_requests
 FOR EACH ROW
 WHEN NEW.status = 'accepted'
@@ -105,7 +110,8 @@ BEGIN
     WHERE food_id = NEW.food_id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS tr_reopen_listing_on_request_cancel
+DROP TRIGGER IF EXISTS tr_reopen_listing_on_request_cancel;
+CREATE TRIGGER tr_reopen_listing_on_request_cancel
 AFTER UPDATE OF status ON listing_requests
 FOR EACH ROW
 WHEN OLD.status = 'accepted'
@@ -115,10 +121,11 @@ BEGIN
     SET status = 'available'
     WHERE food_id = NEW.food_id
       AND status = 'reserved'
-      AND pickup_deadline > datetime('now');
+      AND pickup_deadline > datetime('now', 'localtime');
 END;
 
-CREATE TRIGGER IF NOT EXISTS tr_validate_pickup
+DROP TRIGGER IF EXISTS tr_validate_pickup;
+CREATE TRIGGER tr_validate_pickup
 BEFORE UPDATE OF status ON listing_requests
 FOR EACH ROW
 WHEN NEW.status = 'picked_up'
@@ -132,11 +139,12 @@ BEGIN
         FROM food_listings
         WHERE food_id = NEW.food_id
           AND status = 'reserved'
-          AND pickup_deadline > datetime('now')
+          AND pickup_deadline > datetime('now', 'localtime')
     );
 END;
 
-CREATE TRIGGER IF NOT EXISTS tr_update_food_status_on_pickup
+DROP TRIGGER IF EXISTS tr_update_food_status_on_pickup;
+CREATE TRIGGER tr_update_food_status_on_pickup
 AFTER UPDATE OF status ON listing_requests
 FOR EACH ROW
 WHEN NEW.status = 'picked_up'

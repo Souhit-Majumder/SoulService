@@ -233,6 +233,11 @@ Error responses must not expose stack traces, SQL queries, filesystem paths, cre
 
 ### 9.7 Implementation Status
 
-This section defines the intended API contract. Authentication, database persistence, and the complete listing-creation workflow remain subject to implementation.
+**Implemented.** `POST /api/v1/listings` now authenticates the caller (session cookie), requires the caterer role, checks a CSRF token sent in the `X-CSRF-Token` header, validates the XML against `listing.xsd`, applies the business rules in `app/services/listing_service.py`, and saves the listing (plus dietary tags and allergens) to SQLite. Success returns `201` with the new `listing_id`.
 
-The listing must pass XML parsing, XSD validation, and business-rule validation before any database write occurs.
+Decisions made for the open points above:
+
+- **Timezone policy:** date-times are treated as local time. Values that carry a timezone are converted to local time before saving.
+- **Unsupported content type:** returns `415` with error code `VALIDATION_ERROR`.
+- **Extra rules:** the pickup deadline must also be in the future; dietary and allergen values must come from the fixed lists in `listing_service.py`.
+- **Initial status:** always `available`, set by the database default, never by the client.

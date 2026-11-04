@@ -6,7 +6,7 @@ Posting a listing is the one exception: the browser sends it as XML to
 import sqlite3
 import re
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from app.database.connection import get_db
@@ -19,6 +19,19 @@ from app.web.helpers import (
 )
 
 router = APIRouter()
+
+REGISTER_COPY = {
+    "caterer": {
+        "role": "Caterer",
+        "name_label": "Caterer or food business name",
+        "intro": "Create an account to offer surplus food to local NGOs.",
+    },
+    "ngo": {
+        "role": "NGO",
+        "name_label": "NGO name",
+        "intro": "Create an account to find and request available food.",
+    },
+}
 
 
 def redirect(url: str) -> RedirectResponse:
@@ -61,6 +74,49 @@ def login_submit(
     return redirect(safe_next(next))
 
 
+@router.get("/register")
+def register_page(request: Request, user=Depends(optional_user)):
+    if user:
+        return redirect("/dashboard")
+    return render(request, "register.html", None)
+
+
+@router.get("/register/{kind}")
+def register_form(request: Request, kind: str, user=Depends(optional_user)):
+    if kind not in REGISTER_COPY:
+        raise HTTPException(status_code=404)
+    if user:
+        return redirect("/dashboard")
+    return render(request, "register_form.html", None, kind=kind,
+                  copy=REGISTER_COPY[kind], organization_name="", email="", error=None)
+
+
+@router.post("/register/{kind}", dependencies=[Depends(verify_csrf)])
+def register_submit(
+    request: Request,
+    kind: str,
+    name: str = Form(""),
+    email: str = Form(""),
+    password: str = Form(""),
+    confirm_password: str = Form(""),
+    user=Depends(optional_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    if kind not in REGISTER_COPY:
+        raise HTTPException(status_code=404)
+    if user:
+        return redirect("/dashboard")
+    try:
+        user_id = auth_service.register(conn, kind, name, email, password, confirm_password)
+    except ServiceError as exc:
+        return render(request, "register_form.html", None, status_code=exc.status_code,
+                      kind=kind, copy=REGISTER_COPY[kind], organization_name=name.strip(),
+                      email=email.strip(), error=exc.message)
+    request.session.clear()
+    request.session["user_id"] = user_id
+    return redirect("/onboarding")
+
+
 @router.post("/logout", dependencies=[Depends(verify_csrf)])
 def logout(request: Request):
     request.session.clear()
@@ -101,6 +157,13 @@ def new_food_page(request: Request, user=Depends(role_required("caterer"))):
 
 
 # ---------------- dashboard ----------------
+
+@router.get("/onboarding")
+def onboarding(request: Request, user=Depends(login_required)):
+    if user["role"] not in ("caterer", "recipient"):
+        return redirect("/dashboard")
+    return render(request, "onboarding.html", user)
+
 
 @router.get("/dashboard")
 def dashboard(request: Request, user=Depends(login_required), conn: sqlite3.Connection = Depends(get_db)):

@@ -18,6 +18,12 @@ uvicorn app.main:app --reload
 
 Open http://127.0.0.1:8000. On first start the database is created and filled with demo data.
 
+New users can join at `/register`: choose Caterer or NGO, create an account, and
+follow the role-specific getting-started page. Registration signs the new user in.
+The caterer guide leads to posting food and managing pickup requests; the NGO
+guide leads to browsing food and tracking requests. Accounts are self-registered;
+the app does not verify email addresses or organization identity.
+
 To go back to a clean demo (pickup deadlines are relative to "now", so do this before presenting):
 
 ```bash
@@ -41,7 +47,7 @@ Password for all accounts: `SoulDemo123!`
 
 | # | Function | Who | Where |
 |---|---|---|---|
-| 1 | Login / logout | Everyone | `/login` |
+| 1 | Register / login / logout | Everyone | `/register`, `/login` |
 | 2 | Post food | Caterer | `/food/new` → `POST /api/v1/listings` (XML) |
 | 3 | Browse available food (search + dietary filter) | Everyone | `/food` |
 | 4 | Request food | NGO | "Request this food" button |
@@ -104,7 +110,7 @@ app/
   xml_api/              safe XML parser, validator, responses, XSD schemas
   static/               css/style.css, js/app.js
 templates/              Jinja2 HTML pages
-tests/                  51 automated tests
+tests/                  automated tests
 docs/                   API contract + architecture notes
 ```
 

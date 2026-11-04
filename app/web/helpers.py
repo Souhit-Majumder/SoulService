@@ -110,7 +110,9 @@ async def verify_csrf(request: Request) -> None:
     expected = request.session.get("csrf", "")
     if not expected or not secrets.compare_digest(sent, expected):
         flash(request, "Your session expired. Please try again.", "error")
-        raise WebRedirect("/dashboard")
+        path = request.url.path
+        retry = path if path == "/login" or path.startswith("/register/") else "/dashboard"
+        raise WebRedirect(retry)
 
 
 # ---------- rendering ----------
